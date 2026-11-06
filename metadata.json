@@ -1,0 +1,8 @@
+{
+  "name": "Selera King POS",
+  "description": "A comprehensive restaurant management system for table marking, order taking, menu management, and professional receipt generation, enhanced with Gemini AI for culinary descriptions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

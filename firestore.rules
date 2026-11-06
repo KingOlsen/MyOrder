@@ -1,0 +1,295 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && isVerified() && request.auth.uid == userId;
+    }
+
+    function hasParentUser(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+        get(/databases/$(database)/documents/users/$(userId)).data.ownerId == request.auth.uid;
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'name', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivateInfo(data) {
+      return data.keys().hasAll(['ownerId', 'phone', 'passwordHash', 'address', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'phone', 'passwordHash', 'address', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.phone is string && data.phone.size() >= 3 && data.phone.size() <= 30 &&
+        data.phone.matches('^[0-9+\\-() ]+$') &&
+        data.passwordHash is string && data.passwordHash.size() >= 4 && data.passwordHash.size() <= 256 &&
+        data.address is string && data.address.size() >= 1 && data.address.size() <= 200 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidMenuItemDoc(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'price', 'category', 'description', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'name', 'price', 'category', 'description', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.price is number && data.price >= 0 && data.price <= 1000000 &&
+        data.category is string && data.category.size() <= 20 &&
+        data.category in ['Food', 'Drink', 'Dessert'] &&
+        data.description is string && data.description.size() <= 500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTableDoc(data) {
+      return data.keys().hasAll(['ownerId', 'tableNumericId', 'number', 'status', 'orderStartTimeMs', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'tableNumericId', 'number', 'status', 'orderStartTimeMs', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.tableNumericId is number && data.tableNumericId >= 1 && data.tableNumericId <= 100 &&
+        data.number is string && data.number.size() >= 1 && data.number.size() <= 20 &&
+        data.status is string && data.status.size() <= 20 &&
+        data.status in ['Available', 'Occupied', 'Billed'] &&
+        data.orderStartTimeMs is number && data.orderStartTimeMs >= 0 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidOrderItemDoc(data) {
+      return data.keys().hasAll(['ownerId', 'tableNumericId', 'menuItemId', 'name', 'price', 'category', 'quantity', 'status', 'remark', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'tableNumericId', 'menuItemId', 'name', 'price', 'category', 'quantity', 'status', 'remark', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.tableNumericId is number && data.tableNumericId >= 1 && data.tableNumericId <= 100 &&
+        data.menuItemId is string && data.menuItemId.size() >= 1 && data.menuItemId.size() <= 128 &&
+        data.menuItemId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.price is number && data.price >= 0 && data.price <= 1000000 &&
+        data.category is string && data.category.size() <= 20 &&
+        data.category in ['Food', 'Drink', 'Dessert'] &&
+        data.quantity is number && data.quantity >= 1 && data.quantity <= 1000 &&
+        data.status is string && data.status.size() <= 20 &&
+        data.status in ['Pending', 'Ready'] &&
+        data.remark is string && data.remark.size() <= 200 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTransactionDoc(data) {
+      return data.keys().hasAll(['ownerId', 'tableNumber', 'itemsSummary', 'subtotal', 'tax', 'total', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'tableNumber', 'itemsSummary', 'subtotal', 'tax', 'total', 'createdAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.tableNumber is string && data.tableNumber.size() >= 1 && data.tableNumber.size() <= 20 &&
+        data.itemsSummary is string && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 2000 &&
+        data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 10000000 &&
+        data.tax is number && data.tax >= 0 && data.tax <= 10000000 &&
+        data.total is number && data.total >= 0 && data.total <= 10000000 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidExpenseDoc(data) {
+      return data.keys().hasAll(['ownerId', 'description', 'amount', 'category', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'description', 'amount', 'category', 'createdAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 200 &&
+        data.amount is number && data.amount > 0 && data.amount <= 10000000 &&
+        data.category is string && data.category.size() <= 30 &&
+        data.category in ['Supplies', 'Utilities', 'Rent', 'Wages', 'Maintenance', 'Marketing', 'Other'] &&
+        data.createdAt is timestamp;
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId) && (resource == null || existing().ownerId == request.auth.uid);
+      allow list: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+      allow create: if isOwner(userId) && isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) && isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt'])
+        );
+      allow delete: if false;
+
+      // Collection 2: /users/{userId}/private/{docId} (PII Split Collection)
+      match /private/{docId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(docId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(docId) &&
+          docId == 'info' &&
+          isValidUserPrivateInfo(incoming()) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(docId) &&
+          docId == 'info' &&
+          isValidUserPrivateInfo(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['phone', 'passwordHash', 'address', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['phone', 'address', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['passwordHash', 'updatedAt'])
+          ) &&
+          hasParentUser(userId);
+        allow delete: if false;
+      }
+
+      // Collection 3: /users/{userId}/menuItems/{itemId}
+      match /menuItems/{itemId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(itemId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(itemId) &&
+          isValidMenuItemDoc(incoming()) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(itemId) &&
+          isValidMenuItemDoc(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'category', 'description', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'category', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['description', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['price', 'updatedAt'])
+          ) &&
+          hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(itemId) &&
+          existing().ownerId == request.auth.uid &&
+          hasParentUser(userId);
+      }
+
+      // Collection 4: /users/{userId}/tables/{tableId}
+      match /tables/{tableId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(tableId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(tableId) &&
+          isValidTableDoc(incoming()) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(tableId) &&
+          isValidTableDoc(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().tableNumericId == existing().tableNumericId &&
+          incoming().number == existing().number &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'orderStartTimeMs', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          ) &&
+          hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(tableId) &&
+          existing().ownerId == request.auth.uid &&
+          hasParentUser(userId);
+      }
+
+      // Collection 5: /users/{userId}/orderItems/{orderItemId}
+      match /orderItems/{orderItemId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(orderItemId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(orderItemId) &&
+          isValidOrderItemDoc(incoming()) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasParentUser(userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(orderItemId) &&
+          isValidOrderItemDoc(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().tableNumericId == existing().tableNumericId &&
+          incoming().menuItemId == existing().menuItemId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['quantity', 'remark', 'status', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['quantity', 'remark', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['quantity', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['remark', 'updatedAt'])
+          ) &&
+          hasParentUser(userId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(orderItemId) &&
+          existing().ownerId == request.auth.uid &&
+          hasParentUser(userId);
+      }
+
+      // Collection 6: /users/{userId}/transactions/{transactionId}
+      match /transactions/{transactionId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(transactionId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(transactionId) &&
+          isValidTransactionDoc(incoming()) &&
+          incoming().createdAt == request.time &&
+          hasParentUser(userId);
+        allow update: if false;
+        allow delete: if false;
+      }
+
+      // Collection 7: /users/{userId}/expenses/{expenseId}
+      match /expenses/{expenseId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(expenseId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && isValidId(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(expenseId) &&
+          isValidExpenseDoc(incoming()) &&
+          incoming().createdAt == request.time &&
+          hasParentUser(userId);
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(expenseId) &&
+          existing().ownerId == request.auth.uid &&
+          hasParentUser(userId);
+      }
+    }
+  }
+}

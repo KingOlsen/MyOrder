@@ -1,0 +1,347 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public profile metadata for a registered POS user and their restaurant name.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Registered user and restaurant display name.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp."
+        }
+      },
+      "required": ["ownerId", "name", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Isolated PII and credential metadata for a registered user including phone and password hash.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Registered phone number of the user.",
+          "minLength": 3,
+          "maxLength": 30,
+          "pattern": "^[0-9+\\-() ]+$"
+        },
+        "passwordHash": {
+          "type": "string",
+          "description": "Hashed password for POS user verification.",
+          "minLength": 4,
+          "maxLength": 256
+        },
+        "address": {
+          "type": "string",
+          "description": "Restaurant street address for receipts.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp."
+        }
+      },
+      "required": ["ownerId", "phone", "passwordHash", "address", "createdAt", "updatedAt"]
+    },
+    "MenuItemDoc": {
+      "title": "MenuItemDoc",
+      "description": "A food, drink, or dessert item in the user's restaurant menu.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the menu item.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "price": {
+          "type": "number",
+          "description": "Unit price of the menu item."
+        },
+        "category": {
+          "type": "string",
+          "description": "Menu category.",
+          "enum": ["Food", "Drink", "Dessert"],
+          "maxLength": 20
+        },
+        "description": {
+          "type": "string",
+          "description": "Culinary description of the item.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp."
+        }
+      },
+      "required": ["ownerId", "name", "price", "category", "description", "createdAt", "updatedAt"]
+    },
+    "TableDoc": {
+      "title": "TableDoc",
+      "description": "A restaurant floor table belonging to a user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "tableNumericId": {
+          "type": "number",
+          "description": "Numeric identifier of the table (1-100)."
+        },
+        "number": {
+          "type": "string",
+          "description": "Display table number (e.g. 01 or TAPAU 01).",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "description": "Occupancy status of the table.",
+          "enum": ["Available", "Occupied", "Billed"],
+          "maxLength": 20
+        },
+        "orderStartTimeMs": {
+          "type": "number",
+          "description": "Epoch milliseconds when current order started, or 0 if available."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp."
+        }
+      },
+      "required": ["ownerId", "tableNumericId", "number", "status", "orderStartTimeMs", "createdAt", "updatedAt"]
+    },
+    "OrderItemDoc": {
+      "title": "OrderItemDoc",
+      "description": "An active order line item associated with a user's table.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "tableNumericId": {
+          "type": "number",
+          "description": "Numeric ID of the table this item is ordered for."
+        },
+        "menuItemId": {
+          "type": "string",
+          "description": "ID of the menu item.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Menu item name.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "price": {
+          "type": "number",
+          "description": "Unit price."
+        },
+        "category": {
+          "type": "string",
+          "description": "Menu item category.",
+          "enum": ["Food", "Drink", "Dessert"],
+          "maxLength": 20
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity ordered."
+        },
+        "status": {
+          "type": "string",
+          "description": "Kitchen preparation status.",
+          "enum": ["Pending", "Ready"],
+          "maxLength": 20
+        },
+        "remark": {
+          "type": "string",
+          "description": "Special preparation instructions.",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp."
+        }
+      },
+      "required": ["ownerId", "tableNumericId", "menuItemId", "name", "price", "category", "quantity", "status", "remark", "createdAt", "updatedAt"]
+    },
+    "TransactionDoc": {
+      "title": "TransactionDoc",
+      "description": "A completed payment transaction receipt record for a user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "tableNumber": {
+          "type": "string",
+          "description": "Table number where the order took place.",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "itemsSummary": {
+          "type": "string",
+          "description": "Formatted summary of ordered items and quantities.",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Order subtotal amount."
+        },
+        "tax": {
+          "type": "number",
+          "description": "Order tax amount."
+        },
+        "total": {
+          "type": "number",
+          "description": "Total paid amount."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Transaction server timestamp."
+        }
+      },
+      "required": ["ownerId", "tableNumber", "itemsSummary", "subtotal", "tax", "total", "createdAt"]
+    },
+    "ExpenseDoc": {
+      "title": "ExpenseDoc",
+      "description": "An operational expense record belonging to a user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the authenticated owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the expense.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "amount": {
+          "type": "number",
+          "description": "Expense monetary amount."
+        },
+        "category": {
+          "type": "string",
+          "description": "Expense category.",
+          "enum": ["Supplies", "Utilities", "Rent", "Wages", "Maintenance", "Marketing", "Other"],
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Expense server timestamp."
+        }
+      },
+      "required": ["ownerId", "description", "amount", "category", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores public user and restaurant profile metadata."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": "UserPrivateInfo",
+      "description": "Stores isolated PII (phone, address, passwordHash) strictly restricted to the owner."
+    },
+    "/users/{userId}/menuItems/{itemId}": {
+      "schema": "MenuItemDoc",
+      "description": "Stores menu items belonging to the user."
+    },
+    "/users/{userId}/tables/{tableId}": {
+      "schema": "TableDoc",
+      "description": "Stores floor plan tables belonging to the user."
+    },
+    "/users/{userId}/orderItems/{orderItemId}": {
+      "schema": "OrderItemDoc",
+      "description": "Stores active table order line items belonging to the user."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "TransactionDoc",
+      "description": "Stores completed sales transactions belonging to the user."
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": "ExpenseDoc",
+      "description": "Stores operational expenses belonging to the user."
+    }
+  }
+}
